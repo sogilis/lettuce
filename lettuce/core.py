@@ -70,6 +70,7 @@ class Language(object):
     native = 'English'
     feature = 'Feature'
     scenario = 'Scenario'
+    background = 'Background'
     examples = 'Examples|Scenarios'
     scenario_outline = 'Scenario Outline'
     scenario_separator = 'Scenario( Outline)?'
@@ -802,6 +803,7 @@ class Feature(object):
         f.close()
         language = Language.guess_from_string(string)
         feature = new_feature.from_string(string, with_file=filename, language=language)
+        1==1
         return feature
 
     def _set_definition(self, definition):
@@ -810,6 +812,23 @@ class Feature(object):
     def _parse_remaining_lines(self, lines, original_string, with_file=None):
         # replacing occurrences of Scenario Outline, with just "Scenario"
         joined = u"\n".join(lines[1:])
+
+        background_prefix = u'%s:' % self.language.background
+        background_exists = 0
+        regex = re.compile(
+            u"%s:\s" % self.language.background, re.U | re.I)
+        parts = strings.split_wisely(joined, background_prefix)
+
+        description = u""
+        if len(parts) == 1 and re.search("^" + background_prefix, parts[0]):
+            joined = parts[0]
+            background_exists = 1
+
+        if len(parts) == 2:
+            description = parts[0]
+            joined = parts[1]
+            background_exists = 1
+
         scenario_prefix = u'%s:' % self.language.first_of_scenario
         regex = re.compile(
             u"%s:\s" % self.language.scenario_separator, re.U | re.I)
@@ -817,14 +836,26 @@ class Feature(object):
 
         parts = strings.split_wisely(joined, scenario_prefix)
 
-        description = u""
-
-        if not re.search("^" + scenario_prefix, joined):
-            description = parts[0]
+        if background_exists == 1:
+            background_strings = parts[0]
             parts.pop(0)
+        else:
+            description = u""
+
+            if not re.search("^" + scenario_prefix, joined):
+                description = parts[0]
+                parts.pop(0)
 
         scenario_strings = [u"%s: %s" % (self.language.first_of_scenario, s) \
                             for s in parts if s.strip()]
+
+        if background_exists == 1:
+            k = 0
+            for s in scenario_strings:
+                scenario_strings[k] += background_strings
+                pos = s.find("\n")
+                scenario_strings[k] = s[0:pos+1] + background_strings + "\n" + s[pos+1:len(s)]
+                k += 1
 
         kw = dict(
             original_string=original_string,
