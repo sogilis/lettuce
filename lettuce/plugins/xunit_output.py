@@ -37,26 +37,70 @@ def enable(filename=None):
     root = doc.createElement("testsuite")
     output_filename = filename or "lettucetests.xml"
 
-    @before.each_step
-    def time_step(step):
-        step.started = datetime.now()
+#    @before.each_step
+#    def time_step(step):
+#        step.started = datetime.now()
+#
+#    @after.each_step
+#    def create_test_case(step):
+#        classname = "%s : %s" % (step.scenario.feature.name, step.scenario.name)
+#        tc = doc.createElement("testcase")
+#        tc.setAttribute("classname", classname)
+#        tc.setAttribute("name", step.sentence)
+#        try:
+#            tc.setAttribute("time", str(total_seconds((datetime.now() - step.started))))
+#        except AttributeError:
+#            step.started = datetime.now()
+#            tc.setAttribute("time", str(total_seconds((datetime.now() - step.started))))
+#
+#        if not step.ran:
+#            skip=doc.createElement("skipped")
+#            tc.appendChild(skip)
+#
+#        if step.failed:
+#            cdata = doc.createCDATASection(step.why.traceback)
+#            failure = doc.createElement("failure")
+#            failure.setAttribute("message", step.why.cause)
+#            failure.appendChild(cdata)
+#            tc.appendChild(failure)
+#
+#        root.appendChild(tc)
 
-    @after.each_step
-    def create_test_case(step):
-        classname = "%s : %s" % (step.scenario.feature.name, step.scenario.name)
+    @before.each_scenario
+    def time_step(scenario):
+        scenario.started = datetime.now()
+
+    @after.each_scenario
+    def create_test_case(scenario):
+        classname = scenario.feature.name
         tc = doc.createElement("testcase")
         tc.setAttribute("classname", classname)
-        tc.setAttribute("name", step.sentence)
-        tc.setAttribute("time", str(total_seconds((datetime.now() - step.started))))
-        
-        if not step.ran:
+        tc.setAttribute("name", scenario.name)
+        try:
+            tc.setAttribute("time", str(total_seconds((datetime.now() - scenario.started))))
+        except AttributeError:
+            scenario.started = datetime.now()
+            tc.setAttribute("time", str(total_seconds((datetime.now() - scenario.started))))
+
+        if not scenario.ran and not scenario.failed:
             skip=doc.createElement("skipped")
             tc.appendChild(skip)
 
-        if step.failed:
-            cdata = doc.createCDATASection(step.why.traceback)
+        if scenario.failed:
+            string = ''
+            for step in scenario.steps:
+                status = 'Passed'
+                traceback = ''
+                if step.failed:
+                    status = 'Failed'
+                    message = step.why.cause
+                    traceback = step.why.traceback + "\n"
+                if not step.ran: status = 'Skipped'
+                string += step.sentence + " ............ " + status + "\n" + traceback
+            cdata = doc.createCDATASection(string)
+
             failure = doc.createElement("failure")
-            failure.setAttribute("message", step.why.cause)
+            failure.setAttribute("message", message)
             failure.appendChild(cdata)
             tc.appendChild(failure)
 
