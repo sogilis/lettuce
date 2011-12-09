@@ -823,11 +823,11 @@ class Feature(object):
         background_prefix = u'%s:' % self.language.background
         background_exists = 0
         regex = re.compile(
-            u"%s:\s" % self.language.background, re.U | re.I)
+            u"%s:" % self.language.background, re.U | re.I)
         parts = strings.split_wisely(joined, background_prefix)
 
         description = u""
-        if len(parts) == 1 and re.search("^" + background_prefix, parts[0]):
+        if len(parts) == 1 and re.search("^\s" + background_prefix, joined):
             joined = parts[0]
             background_exists = 1
 
@@ -849,7 +849,7 @@ class Feature(object):
         else:
             description = u""
 
-            if not re.search("^" + scenario_prefix, joined):
+            if not re.search("^\s" + scenario_prefix, joined):
                 description = parts[0]
                 parts.pop(0)
 

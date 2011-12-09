@@ -79,4 +79,7 @@ def get_terminal_size_unix():
         except:
             cr = (25, 80)
 
+    if isinstance(cr, tuple) and len(cr) == 2 and not cr[0] and not cr[1]:
+        cr = (25, 80)
+
     return int(cr[1]), int(cr[0])
