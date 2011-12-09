@@ -70,7 +70,8 @@ class Runner(object):
     features and step definitions on there.
     """
     def __init__(self, base_path, scenarios=None, verbosity=0,
-                 enable_xunit=False, xunit_filename=None):
+                 enable_xunit=False, xunit_filename=None, disable_overlap=False,
+                 with_tags=None, without_tags=None):
         """ lettuce.Runner will try to find a terrain.py file and
         import it from within `base_path`
         """
@@ -83,6 +84,9 @@ class Runner(object):
         sys.path.insert(0, base_path)
         self.loader = fs.FeatureLoader(base_path)
         self.verbosity = verbosity
+        self.disable_overlap = disable_overlap
+        self.with_tags = with_tags
+        self.without_tags = without_tags
         self.scenarios = scenarios and map(int, scenarios.split(",")) or None
 
         sys.path.remove(base_path)
@@ -132,8 +136,41 @@ class Runner(object):
         try:
             for filename in features_files:
                 feature = Feature.from_file(filename)
-                results.append(
-                    feature.run(self.scenarios))
+                feature.disable_overlap = self.disable_overlap
+
+                if self.without_tags and feature.scenarios:
+                    i = 0
+                    for scenario in feature.scenarios[:]:
+                        flagPop = False
+                        if scenario.tags:
+                            for tag in scenario.tags:
+                                if tag in self.without_tags:
+                                    flagPop = True
+                                    break
+
+                        if flagPop:
+                            feature.scenarios.pop(i)
+                        else:
+                            i += 1
+
+                if self.with_tags and feature.scenarios:
+                    i = 0
+                    for scenario in feature.scenarios[:]:
+                        flagPop = True
+                        if scenario.tags:
+                            for tag in scenario.tags:
+                                if tag in self.with_tags:
+                                    flagPop = False
+                                    break
+
+                        if flagPop:
+                            feature.scenarios.pop(i)
+                        else:
+                            i += 1
+
+                if feature.scenarios:
+                    results.append(
+                        feature.run(self.scenarios))
 
         except exceptions.LettuceSyntaxError, e:
             sys.stderr.write(e.msg)

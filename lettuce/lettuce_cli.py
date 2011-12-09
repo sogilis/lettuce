@@ -51,6 +51,18 @@ def main(args=sys.argv[1:]):
                       help='Write JUnit XML to this file. Defaults to '
                       'lettucetests.xml')
 
+    parser.add_option("--disable-overlap",
+                      dest="disable_overlap",
+                      action="store_true",
+                      default=False,
+                      help="Disable overlapping in colored shell output. "
+                           "Use it with colored output in places, where ANSI escape sequences not supported")
+
+    parser.add_option("-t", "--tags",
+                      dest="tags",
+                      default=None,
+                      help='Comma separated list of tags to run')
+
     options, args = parser.parse_args()
     if args:
         base_path = os.path.abspath(args[0])
@@ -60,12 +72,32 @@ def main(args=sys.argv[1:]):
     except ValueError:
         pass
 
+    with_tags = None
+    without_tags = None
+    if options.tags:
+        with_tags = []
+        without_tags = []
+        tags = options.tags.split(',')
+        for tag in tags:
+            if tag:
+                if tag.find('~') is 0:
+                    without_tags.append(tag[1:])
+                else:
+                    with_tags.append(tag)
+
+        if len(with_tags) is 0: with_tags = None
+        if len(without_tags) is 0: without_tags = None
+
+
     runner = lettuce.Runner(
         base_path,
         scenarios=options.scenarios,
         verbosity=options.verbosity,
         enable_xunit=options.enable_xunit,
         xunit_filename=options.xunit_file,
+        disable_overlap=options.disable_overlap,
+        with_tags = with_tags,
+        without_tags = without_tags
     )
 
     result = runner.run()

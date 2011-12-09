@@ -18,7 +18,7 @@
 import re
 import codecs
 import unicodedata
-from copy import deepcopy
+from copy import deepcopy, copy
 from lettuce import strings
 from lettuce import languages
 from lettuce.fs import FileSystem
@@ -241,7 +241,7 @@ class Step(object):
             sentence = evaluate(sentence)
             hashes = map(evaluate_hash_value, hashes)
 
-        new = deepcopy(self)
+        new = copy(self)
         new.sentence = sentence
         new.hashes = hashes
         return new
@@ -493,12 +493,15 @@ class Scenario(object):
     table_indentation = indentation + 2
 
     def __init__(self, name, remaining_lines, keys, outlines, with_file=None,
-                 original_string=None, language=None):
+                 original_string=None, language=None, tags_string=None):
 
         if not language:
             language = language()
 
         self.name = name
+        self.tags = None
+        if tags_string:
+            self.tags = tags_string.split('@')[1:]
         self.language = language
         self.steps = self._parse_remaining_lines(remaining_lines,
                                                  with_file,
@@ -663,7 +666,7 @@ class Scenario(object):
         return "\n".join([(u" " * self.table_indentation) + line for line in lines]) + '\n'
 
     @classmethod
-    def from_string(new_scenario, string, with_file=None, original_string=None, language=None):
+    def from_string(new_scenario, string, with_file=None, original_string=None, language=None, tags_string=None):
         """ Creates a new scenario from string"""
         # ignoring comments
         string = "\n".join(strings.get_stripped_lines(string, ignore_lines_starting_with='#'))
@@ -694,6 +697,7 @@ class Scenario(object):
             with_file=with_file,
             original_string=original_string,
             language=language,
+            tags_string = tags_string
         )
 
         return scenario
@@ -803,7 +807,7 @@ class Feature(object):
         f.close()
         language = Language.guess_from_string(string)
         feature = new_feature.from_string(string, with_file=filename, language=language)
-        1==1
+
         return feature
 
     def _set_definition(self, definition):
@@ -811,7 +815,10 @@ class Feature(object):
 
     def _parse_remaining_lines(self, lines, original_string, with_file=None):
         # replacing occurrences of Scenario Outline, with just "Scenario"
-        joined = u"\n".join(lines[1:])
+        joined = u""
+        for line in lines[1:]:
+            if line.find('@') != 0:
+                joined += u"\n" + line
 
         background_prefix = u'%s:' % self.language.background
         background_exists = 0
@@ -857,13 +864,34 @@ class Feature(object):
                 scenario_strings[k] = s[0:pos+1] + background_strings + "\n" + s[pos+1:len(s)]
                 k += 1
 
+        foundTagline = False
+        tagline = u''
+        taglinesByScenarios = []
+        for row in lines:
+            if row.find(scenario_prefix) == 0:
+                if foundTagline:
+                    taglinesByScenarios.append(tagline)
+                    foundTagline = False
+                else:
+                    taglinesByScenarios.append(None)
+
+            if row.find('@') == 0:
+                foundTagline = True
+                tagline = row
+
         kw = dict(
             original_string=original_string,
             with_file=with_file,
             language=self.language,
         )
 
-        scenarios = [Scenario.from_string(s, **kw) for s in scenario_strings]
+        k = 0
+        scenarios = []
+        for s in scenario_strings:
+            kw['tags_string'] = None
+            if k < len(taglinesByScenarios): kw['tags_string'] =  taglinesByScenarios[k]
+            scenarios.append(Scenario.from_string(s, **kw))
+            k += 1
 
         return scenarios, description
 

@@ -58,17 +58,18 @@ def print_step_running(step):
     if not step.defined_at:
         return
 
-    color = '\033[1;30m'
+    if not step.scenario.feature.disable_overlap:
+        color = '\033[1;30m'
 
-    if step.scenario.outlines:
-        color = '\033[0;36m'
+        if step.scenario.outlines:
+            color = '\033[0;36m'
 
-    string = step.represent_string(step.original_sentence)
-    string = wrap_file_and_line(string, '\033[1;30m', '\033[0m')
-    write_out("%s%s" % (color, string))
-    if step.hashes and step.defined_at:
-        for line in step.represent_hashes().splitlines():
-            write_out("\033[1;30m%s\033[0m\n" % line)
+        string = step.represent_string(step.original_sentence)
+        string = wrap_file_and_line(string, '\033[1;30m', '\033[0m')
+        write_out("%s%s" % (color, string))
+        if step.hashes and step.defined_at:
+            for line in step.represent_hashes().splitlines():
+                write_out("\033[1;30m%s\033[0m\n" % line)
 
 
 @after.each_step
@@ -76,7 +77,7 @@ def print_step_ran(step):
     if step.scenario.outlines:
         return
 
-    if step.hashes and step.defined_at:
+    if not step.scenario.feature.disable_overlap and step.hashes and step.defined_at:
         write_out("\033[A" * (len(step.hashes) + 1))
 
     string = step.represent_string(step.original_sentence)
@@ -84,7 +85,9 @@ def print_step_ran(step):
     if not step.failed:
         string = wrap_file_and_line(string, '\033[1;30m', '\033[0m')
 
-    prefix = '\033[A'
+    prefix = ''
+    if not step.scenario.feature.disable_overlap: prefix = '\033[A'
+
     width, height = terminal.get_size()
     lines_up = len(string) / float(width)
     if lines_up < 1:
