@@ -502,6 +502,7 @@ class Scenario(object):
         self.tags = None
         if tags_string:
             self.tags = tags_string.split('@')[1:]
+            for k in range(len(self.tags)): self.tags[k] = self.tags[k].strip()
         self.language = language
         self.steps = self._parse_remaining_lines(remaining_lines,
                                                  with_file,
@@ -708,13 +709,14 @@ class Feature(object):
     described_at = None
 
     def __init__(self, name, remaining_lines, with_file, original_string,
-                 language=None):
+                 language=None, tags=None):
 
         if not language:
             language = language()
 
         self.name = name
         self.language = language
+        self.tags = tags
 
         self.scenarios, self.description = self._parse_remaining_lines(
             remaining_lines,
@@ -771,6 +773,16 @@ class Feature(object):
     def from_string(new_feature, string, with_file=None, language=None):
         """Creates a new feature from string"""
         lines = strings.get_stripped_lines(string, ignore_lines_starting_with='#')
+
+        tagLine = None
+        if len(lines) and lines[0].find('@') == 0:
+            tagLine = lines[0];
+            lines.pop(0)
+#            tags = lines[0].split('@')
+#            tags.pop(0)
+#            if len(tags) == 0:
+#                tags = None
+
         if not language:
             language = Language()
 
@@ -796,7 +808,8 @@ class Feature(object):
                               remaining_lines=lines,
                               with_file=with_file,
                               original_string=string,
-                              language=language)
+                              language=language,
+                              tags=tagLine)
         return feature
 
     @classmethod
@@ -870,10 +883,13 @@ class Feature(object):
         for row in lines:
             if row.find(scenario_prefix) == 0:
                 if foundTagline:
+                    if self.tags: tagline += u' ' + self.tags
                     taglinesByScenarios.append(tagline)
                     foundTagline = False
                 else:
-                    taglinesByScenarios.append(None)
+                    tagline = None
+                    if self.tags: tagline = self.tags
+                    taglinesByScenarios.append(tagline)
 
             if row.find('@') == 0:
                 foundTagline = True
