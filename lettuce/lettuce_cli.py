@@ -38,6 +38,18 @@ def main(args=sys.argv[1:]):
                       default=None,
                       help='Comma separated list of scenarios to run')
 
+    parser.add_option("-t", "--tags",
+                      dest="tags",
+                      default=None,
+                      help='Comma separated list of tags to run')
+
+    parser.add_option("--disable-overlap",
+                      dest="disable_overlap",
+                      action="store_true",
+                      default=False,
+                      help="Disable overlapping in colored shell output. "
+                        "Use it with colored output in places, where ANSI escape sequences not supported")
+
     parser.add_option("--with-xunit",
                       dest="enable_xunit",
                       action="store_true",
@@ -51,17 +63,18 @@ def main(args=sys.argv[1:]):
                       help='Write JUnit XML to this file. Defaults to '
                       'lettucetests.xml')
 
-    parser.add_option("--disable-overlap",
-                      dest="disable_overlap",
-                      action="store_true",
-                      default=False,
-                      help="Disable overlapping in colored shell output. "
-                           "Use it with colored output in places, where ANSI escape sequences not supported")
+    parser.add_option("--with-html",
+        dest="enable_html",
+        action="store_true",
+        default=False,
+        help='Output test results to a html-file')
 
-    parser.add_option("-t", "--tags",
-                      dest="tags",
-                      default=None,
-                      help='Comma separated list of tags to run')
+    parser.add_option("--html-file",
+        dest="html_file",
+        default=None,
+        type="string",
+        help='Write html to this file. Defaults to '
+             'lettucetests.html')
 
     options, args = parser.parse_args()
     if args:
@@ -95,6 +108,8 @@ def main(args=sys.argv[1:]):
         verbosity=options.verbosity,
         enable_xunit=options.enable_xunit,
         xunit_filename=options.xunit_file,
+        enable_html=options.enable_html,
+        html_filename=options.html_file,
         disable_overlap=options.disable_overlap,
         with_tags = with_tags,
         without_tags = without_tags
