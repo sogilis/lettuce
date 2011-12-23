@@ -183,15 +183,54 @@ def enable(filename=None):
             ''' % {'message': backtrace}
 
 
+        txt = cgi.escape(step.original_sentence)
+        if step.multiline:
+            multiline = "<br/>"
+            multiline += cgi.escape(step.multiline)
+            multiline += "<br/><br/>"
+            txt += "<br/>" + multiline
+
+        table = ''
+        if not step.multiline and len(step.hashes):
+            table = "<table>"
+            k = 0
+            for row in step.hashes:
+                if k == 0:
+                    td = []
+                    table += "<tr>"
+                    for item in row:
+                        td.append("<td>" + cgi.escape(item) + "</td>")
+                    for i in range(len(td)-1, -1, -1):
+                        table += td[i]
+                    table += "</tr>"
+
+                td = []
+                table += "<tr>"
+                for item in row:
+                    td.append("<td>" + cgi.escape(row[item]) + "</td>")
+                for i in range(len(td)-1, -1, -1):
+                    table += td[i]
+                table += "</tr>"
+
+                k += 1
+
+            table += "</table>"
+
+
         step_txt = '''
                 <li id='features_test_feature_12' class='%(step_class)s'>
-                    <div class="step_name"><span class="step val">%(step_txt)s</span></div>
+                    <div class="step_name">
+                        <span class="step val">%(step_txt)s</span>
+                        %(table)s
+                    </div>
                     <div class="step_file"><span>%(step_line)s</span></div>
+                    <div class="clear"></div>
                     %(fail_explanation)s
                 </li>
                 %(scenario_color)s
         ''' % {'step_class': step_class,
-               'step_txt': cgi.escape(step.original_sentence),
+               'step_txt': txt,
+               'table': table,
                'step_line': defined_line,
                'scenario_color': scenario_color,
                'scenario_num': scenario_num,
@@ -277,6 +316,10 @@ def enable(filename=None):
                 color: #FFFFFF;
                 margin: 0px;
                 padding: 0px;
+            }
+
+            .clear {
+                clear:both;
             }
 
             .lettuce,td,th {
