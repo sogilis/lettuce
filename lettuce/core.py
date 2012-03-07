@@ -595,9 +595,10 @@ class Scenario(object):
         before_each and after_each callbacks for steps and scenario"""
 
         results = []
-        call_hook('before_each', 'scenario', self)
 
         def run_scenario(almost_self, order=-1, outline=None, run_callbacks=False):
+            call_hook('before_each', 'scenario', almost_self)
+
             all_steps, steps_passed, steps_failed, steps_undefined, reasons_to_fail = Step.run_all(self.steps, outline, run_callbacks, ignore_case)
             skip = lambda x: x not in steps_passed and x not in steps_undefined and x not in steps_failed
 
@@ -605,6 +606,8 @@ class Scenario(object):
             if outline:
                 call_hook('outline', 'scenario', self, order, outline,
                         reasons_to_fail)
+
+            call_hook('after_each', 'scenario', almost_self)
 
             return ScenarioResult(
                 self,
@@ -622,7 +625,6 @@ class Scenario(object):
         else:
             results.append(run_scenario(self, run_callbacks=True))
 
-        call_hook('after_each', 'scenario', self)
         return results
 
     def _add_myself_to_steps(self):
